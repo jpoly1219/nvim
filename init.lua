@@ -88,7 +88,7 @@ P.S. You can delete this when you're done too. It's your config now! :)
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+vim.g.maplocalleader = ' l'
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
@@ -194,6 +194,10 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+vim.keymap.set('n', '<C-left>', [[<cmd>vertical resize +5<cr>]], { desc = 'make the window biger vertically' })
+vim.keymap.set('n', '<C-right>', [[<cmd>vertical resize -5<cr>]], { desc = 'make the window smaller vertically' })
+vim.keymap.set('n', '<C-up>', [[<cmd>horizontal resize +2<cr>]], { desc = 'make the window bigger horizontally' })
+vim.keymap.set('n', '<C-down>', [[<cmd>horizontal resize -2<cr>]], { desc = 'make the window smaller horizontally' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -496,7 +500,7 @@ require('lazy').setup({
           },
         },
         pylsp = {},
-        tsserver = {},
+        ts_ls = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -558,6 +562,8 @@ require('lazy').setup({
         -- clojure
         'clojure-lsp',
         -- "cljfmt",
+        -- lean
+        'lean-language-server',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -751,6 +757,19 @@ require('lazy').setup({
     },
   },
 
+  -- {
+  --   'maxmx03/solarized.nvim',
+  --   lazy = false,
+  --   priority = 1000,
+  --   opts = {},
+  --   config = function(_, opts)
+  --     vim.o.termguicolors = true
+  --     vim.o.background = 'light'
+  --     require('solarized').setup(opts)
+  --     vim.cmd.colorscheme 'solarized'
+  --   end,
+  -- },
+
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -815,8 +834,8 @@ require('lazy').setup({
         'javascript',
         'jq',
         'jsdoc',
-        'json',
         'latex',
+        'json',
         'lua',
         'luadoc',
         'markdown',

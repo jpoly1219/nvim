@@ -242,5 +242,8 @@ return {
       lsp = {},
       mappings = true,
     },
+    -- config = function()
+    --   require('lean').setup {}
+    -- end,
   },
 }
