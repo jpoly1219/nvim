@@ -154,6 +154,9 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+-- Line length
+vim.opt.colorcolumn = '80'
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -500,7 +503,13 @@ require('lazy').setup({
           },
         },
         pylsp = {},
-        ts_ls = {},
+        ts_ls = {
+          root_dir = require('lspconfig').util.root_pattern 'package.json',
+          single_file_support = false,
+        },
+        denols = {
+          root_dir = require('lspconfig').util.root_pattern('deno.json', 'deno.jsonc'),
+        },
       }
 
       -- Ensure the servers and tools above are installed
@@ -564,6 +573,8 @@ require('lazy').setup({
         -- "cljfmt",
         -- lean
         'lean-language-server',
+        -- deno
+        'deno',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
