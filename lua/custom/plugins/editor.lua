@@ -1,20 +1,20 @@
 return {
-  -- {
-  --   'nvim-neo-tree/neo-tree.nvim',
-  --   branch = 'v3.x',
-  --   dependencies = {
-  --     'nvim-lua/plenary.nvim',
-  --     'nvim-tree/nvim-web-devicons', -- not strictly required, but recommended
-  --     'MunifTanjim/nui.nvim',
-  --     -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
-  --   },
-  --   cmd = 'Neotree',
-  --   event = 'VimEnter',
-  --   config = function()
-  --     -- require('neo-tree').setup()
-  --     vim.keymap.set('n', '<leader>e', '<Cmd>Neotree toggle<CR>', { desc = 'Toggle neotree', remap = true })
-  --   end,
-  -- },
+  {
+    'nvim-neo-tree/neo-tree.nvim',
+    branch = 'v3.x',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-tree/nvim-web-devicons', -- not strictly required, but recommended
+      'MunifTanjim/nui.nvim',
+      -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
+    },
+    cmd = 'Neotree',
+    event = 'VimEnter',
+    config = function()
+      require('neo-tree').setup {}
+      vim.keymap.set('n', '<leader>ft', '<Cmd>Neotree toggle<CR>', { desc = 'Toggle neotree', remap = true })
+    end,
+  },
   {
     'windwp/nvim-autopairs',
     event = 'InsertEnter',
@@ -190,10 +190,17 @@ return {
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
 
-      -- File browser
+      -- File broswer
       vim.keymap.set('n', '<leader>f', function()
         require('telescope').extensions.file_browser.file_browser()
       end, { desc = '[F]ile Browser' })
+
+      -- File browser from cwd
+      vim.keymap.set('n', '<leader>fc', function()
+        require('telescope').extensions.file_browser.file_browser {
+          cwd = vim.fn.expand '%:p:h',
+        }
+      end, { desc = '[F]ile Browser From CWD' })
     end,
   },
   {
@@ -266,7 +273,7 @@ return {
         -- If the main window is  a side tree (e.g. NvimTree) or a dashboard, the command is delayed until it finds a valid window.
         -- The command is cleaned once it has successfuly ran once.
         ---@type boolean
-        enableOnVimEnter = true,
+        enableOnVimEnter = false,
         -- When `true`, enables the plugin when you enter a new Tab.
         -- note: it does not trigger if you come back to an existing tab, to prevent unwanted interfer with user's decisions.
         ---@type boolean
@@ -278,6 +285,41 @@ return {
         ---@type boolean
         skipEnteringNoNeckPainBuffer = false,
       },
+    },
+  },
+  {
+    'folke/lazydev.nvim',
+    ft = 'lua', -- only load on lua files
+    opts = {
+      library = {
+        -- See the configuration section for more details
+        -- Load luvit types when the `vim.uv` word is found
+        { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
+      },
+    },
+  },
+  {
+    'karb94/neoscroll.nvim',
+    opts = {
+      duration_multiplier = 0.1,
+      easing = 'circular',
+    },
+  },
+  {
+    'f-person/git-blame.nvim',
+    -- load the plugin at startup
+    event = 'VeryLazy',
+    -- Because of the keys part, you will be lazy loading this plugin.
+    -- The plugin will only load once one of the keys is used.
+    -- If you want to load the plugin at startup, add something like event = "VeryLazy",
+    -- or lazy = false. One of both options will work.
+    opts = {
+      -- your configuration comes here
+      -- for example
+      enabled = true, -- if you want to enable the plugin
+      message_template = '    <summary> • <date> • <author> • <<sha>>', -- template for the blame message, check the Message template section for more options
+      date_format = '%m-%d-%Y %H:%M:%S', -- template for the date, check Date format section for more options
+      virtual_text_column = 1, -- virtual text start column, check Start virtual text at column section for more options
     },
   },
 }

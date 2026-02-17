@@ -134,6 +134,7 @@ vim.opt.updatetime = 250
 -- Decrease mapped sequence wait time
 -- Displays which-key popup sooner
 vim.opt.timeoutlen = 300
+vim.opt.ttimeoutlen = 50
 
 -- Configure how new splits should be opened
 vim.opt.splitright = true
@@ -168,6 +169,49 @@ vim.o.expandtab = true
 vim.o.smartindent = true
 vim.o.tabstop = 2
 vim.o.shiftwidth = 2
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'markdown',
+  callback = function()
+    vim.opt_local.tabstop = 2
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.expandtab = true
+  end,
+})
+
+-- Enable autoread
+vim.opt.autoread = true
+
+-- Create autocommand group for file watching
+local autoread_group = vim.api.nvim_create_augroup('AutoRead', { clear = true })
+
+-- Background file monitoring with timer (works even when unfocused)
+local timer = vim.loop.new_timer()
+timer:start(
+  0,
+  100,
+  vim.schedule_wrap(function() -- Check every 250ms
+    if vim.fn.mode() ~= 'c' then
+      vim.cmd 'silent! checktime'
+    end
+  end)
+)
+
+-- Also check on these events for immediate response
+vim.api.nvim_create_autocmd({
+  'FocusGained',
+  'BufEnter',
+  'WinEnter',
+}, {
+  group = autoread_group,
+  pattern = '*',
+  callback = function()
+    if vim.fn.mode() ~= 'c' then
+      vim.cmd 'checktime'
+    end
+  end,
+  desc = 'Check for file changes on focus events',
+})
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
@@ -228,6 +272,9 @@ if not vim.loop.fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
+-- Enable your servers
+vim.lsp.enable 'ocamllsp'
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -262,15 +309,29 @@ require('lazy').setup({
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
+    opts = {},
+    -- opts = {
+    --   signs = {
+    --     add = { text = '+' },
+    --     change = { text = '~' },
+    --     delete = { text = '_' },
+    --     topdelete = { text = '‾' },
+    --     changedelete = { text = '~' },
+    --   },
+    -- },
+    -- config = function()
+    --   require('gitsigns').setup {
+    --     signs = function(bufnr)
+    --       return {
+    --         add = { text = '+' },
+    --         change = { text = '~' },
+    --         delete = { text = '_' },
+    --         topdelete = { text = '‾' },
+    --         changedelete = { text = '~' },
+    --       }
+    --     end,
+    --   }
+    -- end,
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -318,7 +379,8 @@ require('lazy').setup({
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
-      { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+      -- { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+      { 'williamboman/mason.nvim', opts = {} }, -- NOTE: Must be loaded before dependants
       'williamboman/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
@@ -328,7 +390,7 @@ require('lazy').setup({
 
       -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
       -- used for completion, annotations and signatures of Neovim apis
-      { 'folke/neodev.nvim', opts = {} },
+      -- { 'folke/neodev.nvim', opts = {} },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -498,18 +560,22 @@ require('lazy').setup({
                 callSnippet = 'Replace',
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
+              diagnostics = {
+                globals = { 'vim' },
+                -- disable = { 'missing-fields' }
+              },
             },
           },
         },
         pylsp = {},
+        basedpyright = {},
         ts_ls = {
           root_dir = require('lspconfig').util.root_pattern 'package.json',
           single_file_support = false,
         },
-        denols = {
-          root_dir = require('lspconfig').util.root_pattern('deno.json', 'deno.jsonc'),
-        },
+        -- denols = {
+        --   root_dir = require('lspconfig').util.root_pattern('deno.json', 'deno.jsonc'),
+        -- },
       }
 
       -- Ensure the servers and tools above are installed
@@ -535,8 +601,8 @@ require('lazy').setup({
         'astro-language-server',
         -- javascript
         'eslint-lsp',
-        'prettierd',
-        'prettier',
+        -- 'prettierd',
+        -- 'prettier',
         -- typescript
         'typescript-language-server',
         -- html
@@ -562,6 +628,8 @@ require('lazy').setup({
         'gofumpt',
         -- python
         'python-lsp-server',
+        'ruff',
+        'basedpyright',
         -- rust
         'rust-analyzer',
         -- nix
@@ -574,7 +642,10 @@ require('lazy').setup({
         -- lean
         'lean-language-server',
         -- deno
-        'deno',
+        -- 'deno',
+        -- elm
+        'elm-language-server',
+        'elm-format',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -589,11 +660,16 @@ require('lazy').setup({
             require('lspconfig')[server_name].setup(server)
           end,
         },
+        ensure_installed = {},
+        automatic_installation = false,
       }
 
       -- LSPs that do not play well with global installs should go here
-      require('lspconfig').ocamllsp.setup {}
+      -- require('lspconfig').ocamllsp.setup {}
     end,
+  },
+  {
+    'reasonml-editor/vim-reason-plus',
   },
 
   { -- Autoformat
@@ -601,36 +677,132 @@ require('lazy').setup({
     lazy = false,
     keys = {
       {
-        '<leader>f',
+        '<leader>Fo',
         function()
           require('conform').format { async = true, lsp_fallback = true }
         end,
         mode = '',
         desc = '[F]ormat buffer',
       },
+      {
+        '<leader>tf',
+        function()
+          -- If autoformat is currently disabled for this buffer,
+          -- then enable it, otherwise disable it
+          if vim.b.disable_autoformat then
+            vim.cmd 'FormatEnable'
+            vim.notify 'Enabled autoformat for current buffer'
+          else
+            vim.cmd 'FormatDisable!'
+            vim.notify 'Disabled autoformat for current buffer'
+          end
+        end,
+        desc = 'Toggle autoformat for current buffer',
+      },
+      {
+        '<leader>tF',
+        function()
+          -- If autoformat is currently disabled globally,
+          -- then enable it globally, otherwise disable it globally
+          if vim.g.disable_autoformat then
+            vim.cmd 'FormatEnable'
+            vim.notify 'Enabled autoformat globally'
+          else
+            vim.cmd 'FormatDisable'
+            vim.notify 'Disabled autoformat globally'
+          end
+        end,
+        desc = 'Toggle autoformat globally',
+      },
     },
     opts = {
-      notify_on_error = false,
+      log_level = vim.log.levels.DEBUG,
+      notify_on_error = true,
       format_on_save = function(bufnr)
+        if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+          return
+        end
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
         local disable_filetypes = { c = true, cpp = true }
         return {
-          timeout_ms = 500,
+          timeout_ms = 2000,
           lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
         }
       end,
-      formatters_by_ft = {
-        lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use a sub-list to tell conform to run *until* a formatter
-        -- is found.
-        -- javascript = { { "prettierd", "prettier" } },
+      formatters = {
+        prettier = {
+          require_cwd = true,
+        },
+        ruff_fix = {
+          append_args = { '--select', 'E,F,W' },
+        },
+        -- prettierd = {},
       },
+      formatters_by_ft = (function()
+        -- Helper function to choose between prettierd and prettier.
+        -- local function prettier_formatter(bufnr)
+        --   if require('conform').get_formatter_info('prettierd', bufnr).available then
+        --     return { 'prettierd' }
+        --   else
+        --     return { 'prettier' }
+        --   end
+        -- end
+
+        -- Languages that use prettier/prettierd.
+        -- local prettier_languages = {
+        --   'javascript',
+        --   'typescript',
+        --   'javascriptreact',
+        --   'typescriptreact',
+        --   'css',
+        --   'html',
+        --   'json',
+        --   'yaml',
+        --   'markdown',
+        -- }
+
+        local formatters = {
+          lua = { 'stylua' },
+          javascript = { 'prettier' },
+          typescript = { 'prettier' },
+          python = { 'ruff_fix', 'ruff_format' },
+          -- Conform can also run multiple formatters sequentially.
+          -- python = { "isort", "black" },
+        }
+
+        -- Add prettier formatter for all web languages.
+        -- for _, lang in ipairs(prettier_languages) do
+        --   formatters[lang] = prettier_formatter
+        -- end
+
+        return formatters
+      end)(),
     },
+    config = function(_, opts)
+      require('conform').setup(opts)
+
+      vim.api.nvim_create_user_command('FormatDisable', function(args)
+        if args.bang then
+          -- :FormatDisable! disables autoformat for this buffer only
+          vim.b.disable_autoformat = true
+        else
+          -- :FormatDisable disables autoformat globally
+          vim.g.disable_autoformat = true
+        end
+      end, {
+        desc = 'Disable autoformat-on-save',
+        bang = true, -- allows the ! variant
+      })
+
+      vim.api.nvim_create_user_command('FormatEnable', function()
+        vim.b.disable_autoformat = false
+        vim.g.disable_autoformat = false
+      end, {
+        desc = 'Re-enable autoformat-on-save',
+      })
+    end,
   },
 
   { -- Autocompletion
@@ -742,6 +914,7 @@ require('lazy').setup({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
+          { name = 'lazydev', group_index = 0 },
         },
       }
     end,
