@@ -567,8 +567,8 @@ require('lazy').setup({
             },
           },
         },
-        pylsp = {},
         basedpyright = {},
+        ruff = {},
         ts_ls = {
           root_dir = require('lspconfig').util.root_pattern 'package.json',
           single_file_support = false,
@@ -627,7 +627,6 @@ require('lazy').setup({
         'gopls',
         'gofumpt',
         -- python
-        'python-lsp-server',
         'ruff',
         'basedpyright',
         -- rust
